@@ -2,7 +2,7 @@
 
 Многофункциональный Telegram-бот с инструментами для разработчиков, тестировщиков и дизайнеров. Интерфейс построен на inline-клавиатурах, Premium/Custom Emoji и отдельных графических панелях.
 
-![Главное меню DevHub Bot](Images/mainmenu.png)
+![DevHub Bot](Images/readme-cover.png)
 
 ## Возможности
 
