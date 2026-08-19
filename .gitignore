@@ -1,0 +1,61 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime data and temporary files
+bot/data/*
+!bot/data/.gitkeep
+bot/temp/*
+!bot/temp/.gitkeep
+bot/cache/
+/.tmp/
+/.tmp_*/
+/tmp/
+/temp/
+*.tmp
+*.log
+*.sqlite
+*.sqlite3
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE and editor settings
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local Codex/agent workspace files
+.agents/
+.codex/
+Prompt.txt
