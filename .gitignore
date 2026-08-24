@@ -14,7 +14,6 @@ htmlcov/
 venv/
 env/
 ENV/
-.python-version
 
 # Secrets and local environment files
 .env

@@ -30,7 +30,7 @@
 
 ## 🛠️ Стек
 
-- Python 3.14;
+- Python `>=3.11,<3.15` (проверено на Python 3.14.7);
 - aiogram 3;
 - asyncio и FSM;
 - Pillow и OpenCV;
@@ -40,6 +40,14 @@
 - aiohttp и aiofiles.
 
 ## ⚡ Быстрый запуск
+
+### Требования
+
+- CPython `>=3.11,<3.15`;
+- рекомендуемая версия — Python `3.14.7`;
+- Git для клонирования проекта.
+
+Минимальная версия обусловлена использованием `enum.StrEnum` и зависимостью `numpy==2.4.4`, для которых требуется Python 3.11 или новее. Точная рекомендуемая и проверенная версия указана в файле `.python-version`.
 
 ### 1. 📥 Клонирование
 
@@ -55,22 +63,27 @@ cd devhub-bot
 Windows PowerShell:
 
 ```powershell
-py -3.14 -m venv .venv
+& "$env:LOCALAPPDATA\Python\bin\python3.14.exe" --version
+& "$env:LOCALAPPDATA\Python\bin\python3.14.exe" -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python --version
 ```
+
+Первая команда должна вывести `Python 3.14.7`. Такой вариант работает с официальным Python Install Manager и не зависит от алиасов `python.exe`/`py.exe` в Microsoft Store.
 
 Linux/macOS:
 
 ```bash
 python3.14 -m venv .venv
 source .venv/bin/activate
+python --version
 ```
 
 ### 3. 📦 Зависимости
 
 ```bash
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### 4. 🔑 Токен Telegram-бота
@@ -127,6 +140,7 @@ DevHub Bot/
 ├── tests/              # автоматические тесты
 ├── .env.example
 ├── .gitignore
+├── .python-version
 ├── main.py
 ├── requirements.txt
 └── README.md
