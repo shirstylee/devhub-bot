@@ -1,6 +1,7 @@
 from aiogram import Router
 
 from bot.handlers import (
+    admin,
     code_screenshot,
     color_picker,
     common,
@@ -18,6 +19,7 @@ from bot.handlers import (
 
 def setup_routers() -> tuple[Router, ...]:
     return (
+        admin.router,
         language.router,
         common.router,
         json_formatter.router,

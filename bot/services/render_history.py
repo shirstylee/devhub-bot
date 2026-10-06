@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
-import logging
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -11,9 +9,9 @@ from typing import Any
 
 from bot.config import BASE_DIR
 from bot.services.render_models import RenderSettings, RenderSource
+from bot.services.private_storage import AdminOnlyJsonStore
 
 
-LOGGER = logging.getLogger(__name__)
 STORE_VERSION = 1
 HISTORY_LIMIT = 10
 HISTORY_PATH = BASE_DIR / "bot" / "data" / "render_history.json"
@@ -65,13 +63,14 @@ class RenderHistoryEntry:
         )
 
 
-class RenderHistoryStore:
-    def __init__(self, path: Path = HISTORY_PATH) -> None:
-        self.path = path
-        self._lock = asyncio.Lock()
+class RenderHistoryStore(AdminOnlyJsonStore):
+    def __init__(self, path: Path = HISTORY_PATH, *, is_admin=None) -> None:
+        super().__init__(path, is_admin=is_admin)
 
     async def load(self, user_id: int) -> list[RenderHistoryEntry]:
         async with self._lock:
+            if not self._is_admin(user_id):
+                return []
             payload = await asyncio.to_thread(self._read_payload)
         entries: list[RenderHistoryEntry] = []
         raw_entries = payload.get("users", {}).get(str(user_id), [])
@@ -110,26 +109,18 @@ class RenderHistoryStore:
             duration=max(0.0, float(duration)),
         )
         async with self._lock:
-            await asyncio.to_thread(self._add_sync, user_id, entry)
+            if self._is_admin(user_id):
+                await asyncio.to_thread(self._add_sync, user_id, entry)
         return entry
 
     async def clear(self, user_id: int) -> None:
         async with self._lock:
-            await asyncio.to_thread(self._clear_sync, user_id)
-
-    def _read_payload(self) -> dict[str, Any]:
-        if not self.path.exists():
-            return {"version": STORE_VERSION, "users": {}}
-        try:
-            payload = json.loads(self.path.read_text(encoding="utf-8"))
-            if not isinstance(payload, dict) or not isinstance(payload.get("users", {}), dict):
-                raise ValueError("Invalid render history structure")
-            return payload
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
-            LOGGER.error("Could not read render history: %s", exc)
-            return {"version": STORE_VERSION, "users": {}}
+            if self._is_admin(user_id):
+                await asyncio.to_thread(self._clear_sync, user_id)
 
     def _add_sync(self, user_id: int, entry: RenderHistoryEntry) -> None:
+        if not self._is_admin(user_id):
+            return
         payload = self._read_payload()
         entries = payload.setdefault("users", {}).get(str(user_id), [])
         if not isinstance(entries, list):
@@ -141,16 +132,6 @@ class RenderHistoryStore:
         payload = self._read_payload()
         payload.setdefault("users", {})[str(user_id)] = []
         self._write_payload(payload)
-
-    def _write_payload(self, payload: dict[str, Any]) -> None:
-        payload["version"] = STORE_VERSION
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(".tmp")
-        temporary.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        temporary.replace(self.path)
 
 
 render_history_store = RenderHistoryStore()

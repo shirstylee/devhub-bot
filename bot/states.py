@@ -1,6 +1,10 @@
 from aiogram.fsm.state import State, StatesGroup
 
 
+class AdminStates(StatesGroup):
+    waiting_admin_id = State()
+
+
 class JsonStates(StatesGroup):
     waiting_json = State()
 

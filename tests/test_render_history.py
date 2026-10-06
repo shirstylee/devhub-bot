@@ -9,7 +9,7 @@ from bot.services.render_models import OutputFormat, RenderSettings, RenderSourc
 class RenderHistoryStoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_keeps_ten_newest_complete_snapshots_per_user(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            store = RenderHistoryStore(Path(directory) / "history.json")
+            store = RenderHistoryStore(Path(directory) / "history.json", is_admin=lambda user_id: user_id in {7, 42})
             for index in range(HISTORY_LIMIT + 2):
                 await store.add(
                     42,

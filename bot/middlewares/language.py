@@ -7,20 +7,20 @@ from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, Message, TelegramObject
 
 from bot.keyboards.language import language_keyboard
-from bot.services.language import get_user_language
+from bot.services.language import get_telegram_language, get_user_language
 from bot.utils.messages import answer_tool_photo
 from bot.utils.premium_emoji import GLOBE
 
 
 LANGUAGE_PROMPT = (
     f"{GLOBE.html} <b>Выберите язык / Choose your language</b>\n\n"
-    "Выбор сохранится для следующих запусков.\n"
-    "Your choice will be saved for future sessions."
+    "Выберите язык интерфейса.\n"
+    "Choose the interface language."
 )
 
 
 class LanguageMiddleware(BaseMiddleware):
-    """Block every bot feature until the user explicitly selects a language."""
+    """Use Telegram locale for guests; allow administrators to choose and save a language."""
 
     async def __call__(
         self,
@@ -35,7 +35,10 @@ class LanguageMiddleware(BaseMiddleware):
         if isinstance(event, CallbackQuery) and (event.data or "").startswith("lang:"):
             return await handler(event, data)
 
-        language = await get_user_language(user.id)
+        language = await get_user_language(user.id, user.language_code)
+        if data.get("admin_event"):
+            data["lang"] = language or get_telegram_language(user.language_code)
+            return await handler(event, data)
         if language is None:
             await self._request_language(event)
             return None

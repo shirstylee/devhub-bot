@@ -10,7 +10,7 @@ class UserPreferencesStoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_sections_survive_reload_and_are_isolated_by_user(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "preferences.json"
-            store = UserPreferencesStore(path)
+            store = UserPreferencesStore(path, is_admin=lambda user_id: user_id in {7, 42})
             defaults = {"theme": "seti", "language": "javascript", "background": "carbon"}
 
             await store.save_section(
@@ -19,7 +19,7 @@ class UserPreferencesStoreTests(unittest.IsolatedAsyncioTestCase):
                 {"theme": "nord", "language": "python", "background": "#123456"},
             )
 
-            reloaded = UserPreferencesStore(path)
+            reloaded = UserPreferencesStore(path, is_admin=lambda user_id: user_id in {7, 42})
             self.assertEqual(
                 await reloaded.load_section(42, "code_screenshot", defaults),
                 {"theme": "nord", "language": "python", "background": "#123456"},
@@ -44,7 +44,7 @@ class UserPreferencesStoreTests(unittest.IsolatedAsyncioTestCase):
                 ),
                 encoding="utf-8",
             )
-            store = UserPreferencesStore(path)
+            store = UserPreferencesStore(path, is_admin=lambda user_id: user_id in {7, 42})
             loaded = await store.load_section(7, "password", {"length": 16, "count": 1})
             self.assertEqual(loaded, {"length": 24, "count": 1})
 

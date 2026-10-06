@@ -11,7 +11,7 @@ class RenderSettingsStoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_round_trip_and_version(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "settings.json"
-            store = RenderSettingsStore(path)
+            store = RenderSettingsStore(path, is_admin=lambda user_id: user_id == 42)
             settings = RenderSettings(
                 background_color="#112233",
                 width=1080,
@@ -35,7 +35,7 @@ class RenderSettingsStoreTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "settings.json"
             path.write_text("{broken", encoding="utf-8")
-            loaded = await RenderSettingsStore(path).load(7)
+            loaded = await RenderSettingsStore(path, is_admin=lambda user_id: user_id == 7).load(7)
             self.assertEqual(loaded, RenderSettings())
 
 

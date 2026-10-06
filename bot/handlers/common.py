@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.main_menu import main_menu_keyboard
+from bot.services.administrators import administrator_store
 from bot.utils.temp_files import cleanup_paths
 from bot.utils.messages import answer_callback, answer_tool_photo, edit_tool_photo
 from bot.utils.premium_emoji import BOT, BRUSH, CODE, FILE, LINK, LOCKED, PEOPLE, TEXT
@@ -49,7 +50,8 @@ async def start(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     cleanup_paths(data.get("file_input_path"), data.get("pdf_input_path"), data.get("pdf_images"))
     await state.clear()
-    await answer_tool_photo(message, "main", build_welcome_text(lang), reply_markup=main_menu_keyboard(lang))
+    await answer_tool_photo(message, "main", build_welcome_text(lang), reply_markup=main_menu_keyboard(
+        lang, allow_language_choice=bool(message.from_user and administrator_store.is_admin(message.from_user.id))))
 
 
 @router.message(Command("menu"))
@@ -57,7 +59,8 @@ async def menu(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     cleanup_paths(data.get("file_input_path"), data.get("pdf_input_path"), data.get("pdf_images"))
     await state.clear()
-    await answer_tool_photo(message, "main", build_welcome_text(lang), reply_markup=main_menu_keyboard(lang))
+    await answer_tool_photo(message, "main", build_welcome_text(lang), reply_markup=main_menu_keyboard(
+        lang, allow_language_choice=bool(message.from_user and administrator_store.is_admin(message.from_user.id))))
 
 
 @router.callback_query(F.data == "menu:back")
@@ -76,7 +79,8 @@ async def callback_back_to_menu(callback: CallbackQuery, state: FSMContext, lang
                 callback.message,
                 "main",
                 build_welcome_text(lang),
-                reply_markup=main_menu_keyboard(lang),
+                reply_markup=main_menu_keyboard(lang, allow_language_choice=administrator_store.is_admin(callback.from_user.id)),
             )
             return
-        await edit_tool_photo(callback, "main", build_welcome_text(lang), reply_markup=main_menu_keyboard(lang))
+        await edit_tool_photo(callback, "main", build_welcome_text(lang), reply_markup=main_menu_keyboard(
+            lang, allow_language_choice=administrator_store.is_admin(callback.from_user.id)))
