@@ -15,12 +15,18 @@ venv/
 env/
 ENV/
 
-# Secrets and local environment files
+# Secrets and local environment files, including common backup names
 .env
 .env.*
+*.env
+*.env.*
 !.env.example
 *.pem
 *.key
+*.p12
+*.pfx
+/.aws/
+/.ssh/
 
 # Runtime data and temporary files
 bot/data/*
@@ -36,6 +42,8 @@ bot/cache/
 *.log
 *.sqlite
 *.sqlite3
+*.db
+*.bak
 
 # Build and packaging artifacts
 build/
