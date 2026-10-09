@@ -52,7 +52,7 @@ async def ask_qr_photo(callback: CallbackQuery, state: FSMContext, lang: str) ->
     await edit_message_text(callback, tr(lang, "Отправьте фото с QR-кодом.", "Send a photo containing a QR code."), reply_markup=back_keyboard(lang))
 
 
-@router.message(QrStates.waiting_text, F.text)
+@router.message(QrStates.waiting_text, F.text, flags={"heavy": True})
 async def handle_qr_text(message: Message, lang: str) -> None:
     await _send_qr(message, message.text or "", f"{SUCCESS.html} {tr(lang, 'QR-код готов.', 'QR code created.')}", lang)
 
@@ -64,26 +64,26 @@ async def handle_wifi_ssid(message: Message, state: FSMContext, lang: str) -> No
     await message.answer(tr(lang, "Введите пароль WiFi.", "Enter the Wi-Fi password."), reply_markup=back_keyboard(lang))
 
 
-@router.message(QrStates.waiting_wifi_password, F.text)
+@router.message(QrStates.waiting_wifi_password, F.text, flags={"heavy": True})
 async def handle_wifi_password(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     payload = build_wifi_payload(data.get("wifi_ssid", ""), message.text or "")
     await _send_qr(message, payload, f"{SUCCESS.html} {tr(lang, 'QR-код WiFi готов.', 'Wi-Fi QR code created.')}", lang)
 
 
-@router.message(QrStates.waiting_phone, F.text)
+@router.message(QrStates.waiting_phone, F.text, flags={"heavy": True})
 async def handle_phone(message: Message, lang: str) -> None:
     payload = build_phone_payload(message.text or "")
     await _send_qr(message, payload, f"{SUCCESS.html} {tr(lang, 'QR-код телефона готов.', 'Phone QR code created.')}", lang)
 
 
-@router.message(QrStates.waiting_username, F.text)
+@router.message(QrStates.waiting_username, F.text, flags={"heavy": True})
 async def handle_telegram(message: Message, lang: str) -> None:
     payload = build_telegram_payload(message.text or "")
     await _send_qr(message, payload, f"{SUCCESS.html} {tr(lang, 'QR-код Telegram готов.', 'Telegram QR code created.')}", lang)
 
 
-@router.message(QrStates.waiting_photo, F.photo | F.document)
+@router.message(QrStates.waiting_photo, F.photo | F.document, flags={"heavy": True})
 async def scan_qr(message: Message, lang: str) -> None:
     input_path: Path = make_temp_path(".png")
     try:

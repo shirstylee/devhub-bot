@@ -9,7 +9,14 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import settings
 from bot.handlers import setup_routers
-from bot.middlewares import AdminAccessMiddleware, LanguageMiddleware, StatisticsMiddleware
+from bot.middlewares import (
+    AdminAccessMiddleware,
+    AntiSpamMiddleware,
+    HeavyRequestMiddleware,
+    LanguageMiddleware,
+    StatisticsMiddleware,
+)
+from bot.services.anti_spam import AntiSpamLimiter
 from bot.services.privacy import prune_non_admin_data
 
 
@@ -52,9 +59,12 @@ async def run_bot() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher(storage=MemoryStorage())
+    limiter = AntiSpamLimiter()
     for observer in (dp.message, dp.callback_query):
         observer.outer_middleware(AdminAccessMiddleware())
+        observer.outer_middleware(AntiSpamMiddleware(limiter))
         observer.outer_middleware(StatisticsMiddleware())
+        observer.middleware(HeavyRequestMiddleware(limiter))
     language_middleware = LanguageMiddleware()
     dp.message.outer_middleware(language_middleware)
     dp.callback_query.outer_middleware(language_middleware)

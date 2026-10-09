@@ -34,7 +34,7 @@ async def set_pdf_mode(callback: CallbackQuery, state: FSMContext, lang: str) ->
         await edit_message_text(callback, tr(lang, "Отправьте PDF файлом.", "Send a PDF file."), reply_markup=back_keyboard(lang))
 
 
-@router.message(PdfStates.waiting_pdf, F.document)
+@router.message(PdfStates.waiting_pdf, F.document, flags={"heavy": True})
 async def receive_pdf(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     mode = data.get("pdf_mode")
@@ -59,7 +59,7 @@ async def receive_pdf(message: Message, state: FSMContext, lang: str) -> None:
         cleanup_paths(input_path, output_dir, archive_path)
 
 
-@router.message(PdfStates.waiting_images, F.photo | F.document)
+@router.message(PdfStates.waiting_images, F.photo | F.document, flags={"heavy": "upload"})
 async def receive_pdf_image(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     image_paths = list(data.get("pdf_images", []))
@@ -77,7 +77,7 @@ async def receive_pdf_image(message: Message, state: FSMContext, lang: str) -> N
     await message.answer(f"{SUCCESS.html} {tr(lang, f'Изображений загружено: {len(image_paths)}', f'Images uploaded: {len(image_paths)}')}", reply_markup=image_pdf_collect_keyboard(len(image_paths), lang))
 
 
-@router.callback_query(F.data == "pdf:create_from_images")
+@router.callback_query(F.data == "pdf:create_from_images", flags={"heavy": True})
 async def create_pdf_from_images(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     paths = [Path(path) for path in data.get("pdf_images", [])]

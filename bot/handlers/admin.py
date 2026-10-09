@@ -141,6 +141,7 @@ async def admin_callback(callback: CallbackQuery, state: FSMContext, lang: str =
             tr(lang, f"{TEXT.html} Сообщения: {counters['messages']}", f"{TEXT.html} Messages: {counters['messages']}"),
             tr(lang, f"{LINK.html} Нажатия кнопок: {counters['callbacks']}", f"{LINK.html} Button clicks: {counters['callbacks']}"),
             tr(lang, f"{ERROR.html} Ошибки обработчиков: {counters['errors']}", f"{ERROR.html} Handler errors: {counters['errors']}"),
+            tr(lang, f"{LOCKED.html} Отклонено защитой: {counters['rejected_requests']}", f"{LOCKED.html} Rejected by protection: {counters['rejected_requests']}"),
             tr(lang, f"\n{CODE.html} <b>Нажатия инструментов:</b>", f"\n{CODE.html} <b>Tool button clicks:</b>")]
         lines.extend(f"{TOOL_ICONS[key].html} {TOOL_LABELS[key]}: {counters['tool_opens'].get(key, 0)}" for key in TOOL_LABELS)
         lines.append(tr(lang, f"\n{LOCKED.html} Без ID, имён и содержимого сообщений.\n{INFO.html} Счётчики только в памяти; админ-панель не учитывается.",
@@ -154,6 +155,7 @@ async def admin_callback(callback: CallbackQuery, state: FSMContext, lang: str =
             f"{CLOCK.html} Остальные настройки обычных пользователей временно в памяти (срок действия — 1 час бездействия, максимум 512 записей на хранилище); история не ведётся.\n"
             f"{DELETE.html} Просроченные записи очищаются при обращении к хранилищу.\n"
             f"{BOT.html} Диалоговые состояния и статистика — в оперативной памяти, без базы пользователей.\n"
+            f"{CLOCK.html} Антиспам: до 4096 записей с ID и счётчиками только в памяти; срок бездействия — 10 минут, очистка при обращениях.\n"
             f"{LOCKED.html} При запуске старые записи неадминистраторов удаляются автоматически.\n\n"
             f"{INFO.html} Файлы для обработки временно скачиваются на диск. Это не означает отсутствия обработки персональных данных.",
             f"{INFO.html} <b>Data storage</b>\n\n"
@@ -162,6 +164,7 @@ async def admin_callback(callback: CallbackQuery, state: FSMContext, lang: str =
             f"{CLOCK.html} Other settings of ordinary users: temporary in-memory settings (1-hour idle expiry, up to 512 entries per store); no history.\n"
             f"{DELETE.html} Expired entries are cleared when the store is accessed.\n"
             f"{BOT.html} Conversation state and statistics are in memory, with no user database.\n"
+            f"{CLOCK.html} Anti-spam: up to 4096 IDs and counters in memory only; 10-minute idle expiry, cleaned on requests.\n"
             f"{LOCKED.html} Old non-admin records are automatically removed at startup.\n\n"
             f"{INFO.html} Files are temporarily downloaded to disk for processing. This does not mean that no personal data is processed."), privacy_keyboard(lang))
     elif action == "prune":

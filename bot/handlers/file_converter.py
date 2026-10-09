@@ -27,7 +27,7 @@ async def open_file_converter(callback: CallbackQuery, state: FSMContext, lang: 
     )
 
 
-@router.message(FileStates.waiting_file, F.photo | F.document)
+@router.message(FileStates.waiting_file, F.photo | F.document, flags={"heavy": "upload"})
 async def receive_file(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     cleanup_paths(data.get("file_input_path"))
@@ -48,7 +48,7 @@ async def receive_file(message: Message, state: FSMContext, lang: str) -> None:
     await message.answer(f"{SUCCESS.html} {tr(lang, 'Файл получен. Выберите действие:', 'File received. Choose an action:')}", reply_markup=file_actions_keyboard(lang))
 
 
-@router.callback_query(F.data.startswith("file:"))
+@router.callback_query(F.data.startswith("file:"), flags={"heavy": True})
 async def handle_file_action(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     input_path = Path(data["file_input_path"]) if data.get("file_input_path") else None

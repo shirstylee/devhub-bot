@@ -173,7 +173,7 @@ async def set_code_language(callback: CallbackQuery, state: FSMContext, lang: st
     await edit_message_text(callback, f"{CODE.html} <b>{tr(lang, 'Выберите язык кода', 'Choose a code language')}</b>", reply_markup=code_languages_keyboard(language, lang))
 
 
-@router.message(CodeScreenshotStates.waiting_code, F.text)
+@router.message(CodeScreenshotStates.waiting_code, F.text, flags={"heavy": True})
 async def render_code(message: Message, state: FSMContext, lang: str) -> None:
     settings = await _code_settings_from_state(state, message.from_user.id)
     output_path: Path = make_temp_path(".png")

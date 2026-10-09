@@ -19,7 +19,7 @@ async def open_shortener(callback: CallbackQuery, state: FSMContext, lang: str) 
     await edit_tool_photo(callback, "shortener", f"{LINK.html} <b>{tr(lang, 'Сократитель ссылок', 'Link shortener')}</b>\n\n{tr(lang, 'Отправьте длинную ссылку.', 'Send a long link.')}", reply_markup=back_keyboard(lang))
 
 
-@router.message(LinkShortenerStates.waiting_url, F.text)
+@router.message(LinkShortenerStates.waiting_url, F.text, flags={"heavy": True})
 async def handle_url(message: Message, lang: str) -> None:
     try:
         short_url = await shorten_url(message.text or "")

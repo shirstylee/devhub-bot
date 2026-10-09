@@ -20,6 +20,7 @@ class Statistics:
         self.messages = 0
         self.callbacks = 0
         self.errors = 0
+        self.rejected_requests = 0
         self.tool_opens: Counter[str] = Counter()
 
     def record(self, event: Message | CallbackQuery) -> None:
@@ -35,6 +36,7 @@ class Statistics:
         return {
             "uptime_seconds": int(monotonic() - self.started_at),
             "messages": self.messages, "callbacks": self.callbacks, "errors": self.errors,
+            "rejected_requests": self.rejected_requests,
             "tool_opens": dict(self.tool_opens),
         }
 
