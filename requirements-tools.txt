@@ -1,0 +1,4 @@
+# Optional verification/build tools; not required to run the bot.
+-c constraints.txt
+pip-audit==2.10.1
+setuptools==84.1.0
