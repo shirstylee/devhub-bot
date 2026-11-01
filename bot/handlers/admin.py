@@ -155,6 +155,7 @@ async def admin_callback(callback: CallbackQuery, state: FSMContext, lang: str =
             f"{CLOCK.html} Остальные настройки обычных пользователей временно в памяти (срок действия — 1 час бездействия, максимум 512 записей на хранилище); история не ведётся.\n"
             f"{DELETE.html} Просроченные записи очищаются при обращении к хранилищу.\n"
             f"{BOT.html} Диалоговые состояния и статистика — в оперативной памяти, без базы пользователей.\n"
+            f"{CLOCK.html} Диалоги и данные ввода: 15 минут бездействия; временные файлы: 10 минут. Уборка каждую минуту и при запуске, активные задачи защищены.\n"
             f"{CLOCK.html} Антиспам: до 4096 записей с ID и счётчиками только в памяти; срок бездействия — 10 минут, очистка при обращениях.\n"
             f"{LOCKED.html} При запуске старые записи неадминистраторов удаляются автоматически.\n\n"
             f"{INFO.html} Файлы для обработки временно скачиваются на диск. Это не означает отсутствия обработки персональных данных.",
@@ -164,6 +165,7 @@ async def admin_callback(callback: CallbackQuery, state: FSMContext, lang: str =
             f"{CLOCK.html} Other settings of ordinary users: temporary in-memory settings (1-hour idle expiry, up to 512 entries per store); no history.\n"
             f"{DELETE.html} Expired entries are cleared when the store is accessed.\n"
             f"{BOT.html} Conversation state and statistics are in memory, with no user database.\n"
+            f"{CLOCK.html} Dialogs and input: 15-minute idle expiry; temporary files: 10 minutes. Cleanup every minute and at startup; active jobs are protected.\n"
             f"{CLOCK.html} Anti-spam: up to 4096 IDs and counters in memory only; 10-minute idle expiry, cleaned on requests.\n"
             f"{LOCKED.html} Old non-admin records are automatically removed at startup.\n\n"
             f"{INFO.html} Files are temporarily downloaded to disk for processing. This does not mean that no personal data is processed."), privacy_keyboard(lang))

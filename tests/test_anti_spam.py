@@ -17,6 +17,7 @@ from bot.handlers import code_screenshot, file_converter, link_shortener, pdf_to
 from bot.middlewares import (
     AdminAccessMiddleware, AntiSpamMiddleware, HeavyRequestMiddleware,
     LanguageMiddleware, StatisticsMiddleware,
+    LifecycleMiddleware,
 )
 from bot.middlewares.anti_spam import upload_size
 from bot.services.administrators import AdministratorStore
@@ -463,7 +464,7 @@ class AntiSpamIntegrationTests(unittest.IsolatedAsyncioTestCase):
         limiters = []
         for observer in (dp.message, dp.callback_query):
             self.assertEqual([type(m) for m in observer.outer_middleware],
-                             [AdminAccessMiddleware, AntiSpamMiddleware, StatisticsMiddleware, LanguageMiddleware])
+                             [AdminAccessMiddleware, AntiSpamMiddleware, LifecycleMiddleware, StatisticsMiddleware, LanguageMiddleware])
             self.assertEqual([type(m) for m in observer.middleware], [HeavyRequestMiddleware])
             limiters.extend((observer.outer_middleware[1].limiter, observer.middleware[0].limiter))
         self.assertTrue(all(limiter is limiters[0] for limiter in limiters))

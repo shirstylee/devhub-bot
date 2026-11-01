@@ -5,7 +5,6 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import settings
 from bot.handlers import setup_routers
@@ -14,10 +13,13 @@ from bot.middlewares import (
     AntiSpamMiddleware,
     HeavyRequestMiddleware,
     LanguageMiddleware,
+    LifecycleMiddleware,
     StatisticsMiddleware,
 )
 from bot.services.anti_spam import AntiSpamLimiter
 from bot.services.privacy import prune_non_admin_data
+from bot.services.maintenance import PrivacyMaintenance
+from bot.services.sessions import ExpiringMemoryStorage
 
 
 async def poll_bot(dp: Dispatcher, bot: Bot) -> None:
@@ -58,11 +60,16 @@ async def run_bot() -> None:
         token=settings.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    dp = Dispatcher(storage=MemoryStorage())
+    storage = ExpiringMemoryStorage()
+    dp = Dispatcher(storage=storage)
+    maintenance = PrivacyMaintenance(storage)
+    dp.startup.register(maintenance.start)
+    dp.shutdown.register(maintenance.close)
     limiter = AntiSpamLimiter()
     for observer in (dp.message, dp.callback_query):
         observer.outer_middleware(AdminAccessMiddleware())
         observer.outer_middleware(AntiSpamMiddleware(limiter))
+        observer.outer_middleware(LifecycleMiddleware())
         observer.outer_middleware(StatisticsMiddleware())
         observer.middleware(HeavyRequestMiddleware(limiter))
     language_middleware = LanguageMiddleware()

@@ -1049,14 +1049,14 @@ async def _render_sources(
     try:
         for source in sources:
             path = make_temp_path(source.suffix)
+            input_paths.append(path)
             await anchor.bot.download(source.file_id, destination=path)
             source.local_path = path
-            input_paths.append(path)
         if background_source is not None:
             background_path = make_temp_path(background_source.suffix)
+            input_paths.append(background_path)
             await anchor.bot.download(background_source.file_id, destination=background_path)
             background_source.local_path = background_path
-            input_paths.append(background_path)
 
         settings = (
             RenderSettings.from_dict(history_entry.settings.to_dict())

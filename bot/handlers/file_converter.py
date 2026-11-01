@@ -31,6 +31,7 @@ async def open_file_converter(callback: CallbackQuery, state: FSMContext, lang: 
 async def receive_file(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     cleanup_paths(data.get("file_input_path"))
+    await state.update_data(file_input_path=None)
 
     if message.photo:
         file_id = message.photo[-1].file_id
@@ -43,9 +44,17 @@ async def receive_file(message: Message, state: FSMContext, lang: str) -> None:
         await message.answer(f"{ERROR.html} {tr(lang, 'Отправьте файл или изображение.', 'Send a file or image.')}", reply_markup=back_keyboard(lang))
         return
 
-    await message.bot.download(file_id, destination=input_path)
-    await state.update_data(file_input_path=str(input_path))
-    await message.answer(f"{SUCCESS.html} {tr(lang, 'Файл получен. Выберите действие:', 'File received. Choose an action:')}", reply_markup=file_actions_keyboard(lang))
+    retained = False
+    try:
+        await message.bot.download(file_id, destination=input_path)
+        await state.update_data(file_input_path=str(input_path))
+        await message.answer(f"{SUCCESS.html} {tr(lang, 'Файл получен. Выберите действие:', 'File received. Choose an action:')}", reply_markup=file_actions_keyboard(lang))
+        retained = True
+    finally:
+        if not retained:
+            cleanup_paths(input_path)
+            if (await state.get_data()).get("file_input_path") == str(input_path):
+                await state.update_data(file_input_path=None)
 
 
 @router.callback_query(F.data.startswith("file:"), flags={"heavy": True})
@@ -58,7 +67,6 @@ async def handle_file_action(callback: CallbackQuery, state: FSMContext, lang: s
 
     action = callback.data or ""
     output_path: Path | None = None
-    processed = False
 
     try:
         if action.startswith("file:convert:"):
@@ -88,15 +96,14 @@ async def handle_file_action(callback: CallbackQuery, state: FSMContext, lang: s
             return
 
         await callback.message.answer_document(document=FSInputFile(output_path), caption=caption, reply_markup=back_keyboard(lang))
-        processed = True
         await state.update_data(file_input_path=None)
         await answer_callback(callback)
     except ValueError as exc:
         await answer_callback(callback, str(exc), show_alert=True)
     finally:
-        cleanup_paths(output_path)
-        if processed:
-            cleanup_paths(input_path)
+        cleanup_paths(output_path, input_path)
+        if (await state.get_data()).get("file_input_path") == str(input_path):
+            await state.update_data(file_input_path=None)
 
 
 def _ensure_image(path: Path, lang: str) -> None:

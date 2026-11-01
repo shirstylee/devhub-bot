@@ -65,8 +65,8 @@ async def handle_rgb(message: Message, lang: str) -> None:
 
 async def _send_color(message: Message, hex_color: str, rgb: tuple[int, int, int], lang: str) -> None:
     image_path: Path = make_temp_path(".png")
-    create_color_image(rgb, image_path)
     try:
+        create_color_image(rgb, image_path)
         await message.answer_photo(
             photo=FSInputFile(image_path),
             caption=(

@@ -71,10 +71,18 @@ async def receive_pdf_image(message: Message, state: FSMContext, lang: str) -> N
         input_path = make_temp_path(Path(message.document.file_name or "image.jpg").suffix or ".jpg")
     else:
         return
-    await message.bot.download(file_id, destination=input_path)
-    image_paths.append(str(input_path))
-    await state.update_data(pdf_images=image_paths)
-    await message.answer(f"{SUCCESS.html} {tr(lang, f'Изображений загружено: {len(image_paths)}', f'Images uploaded: {len(image_paths)}')}", reply_markup=image_pdf_collect_keyboard(len(image_paths), lang))
+    retained = False
+    try:
+        await message.bot.download(file_id, destination=input_path)
+        image_paths.append(str(input_path))
+        await state.update_data(pdf_images=image_paths)
+        await message.answer(f"{SUCCESS.html} {tr(lang, f'Изображений загружено: {len(image_paths)}', f'Images uploaded: {len(image_paths)}')}", reply_markup=image_pdf_collect_keyboard(len(image_paths), lang))
+        retained = True
+    finally:
+        if not retained:
+            cleanup_paths(input_path)
+            current = (await state.get_data()).get("pdf_images", [])
+            await state.update_data(pdf_images=[path for path in current if path != str(input_path)])
 
 
 @router.callback_query(F.data == "pdf:create_from_images", flags={"heavy": True})
@@ -84,11 +92,13 @@ async def create_pdf_from_images(callback: CallbackQuery, state: FSMContext, lan
     if not paths:
         await answer_callback(callback, tr(lang, "Сначала отправьте изображения.", "Send images first."), show_alert=True)
         return
-    await answer_callback(callback)
     output_path = make_temp_path(".pdf")
     try:
+        await answer_callback(callback)
         images_to_pdf(paths, output_path)
         await callback.message.answer_document(FSInputFile(output_path), caption=f"{SUCCESS.html} {tr(lang, 'PDF создан.', 'PDF created.')}", reply_markup=pdf_tools_keyboard(lang))
-        await state.update_data(pdf_images=[])
     finally:
         cleanup_paths(*paths, output_path)
+        consumed = {str(path) for path in paths}
+        current = (await state.get_data()).get("pdf_images", [])
+        await state.update_data(pdf_images=[path for path in current if path not in consumed])

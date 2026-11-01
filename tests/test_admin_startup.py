@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from bot import main as bot_main
 from bot.config import Settings
-from bot.middlewares import AdminAccessMiddleware, AntiSpamMiddleware, HeavyRequestMiddleware, LanguageMiddleware, StatisticsMiddleware
+from bot.middlewares import AdminAccessMiddleware, AntiSpamMiddleware, HeavyRequestMiddleware, LanguageMiddleware, LifecycleMiddleware, StatisticsMiddleware
 
 
 class AdminStartupTests(unittest.IsolatedAsyncioTestCase):
@@ -26,7 +26,7 @@ class AdminStartupTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events, ["cleanup", "bot"])
         for observer in (dispatcher.message, dispatcher.callback_query):
             middlewares = [type(call.args[0]) for call in observer.outer_middleware.call_args_list]
-            self.assertEqual(middlewares, [AdminAccessMiddleware, AntiSpamMiddleware, StatisticsMiddleware, LanguageMiddleware])
+            self.assertEqual(middlewares, [AdminAccessMiddleware, AntiSpamMiddleware, LifecycleMiddleware, StatisticsMiddleware, LanguageMiddleware])
             self.assertIsInstance(observer.middleware.call_args.args[0], HeavyRequestMiddleware)
         dispatcher.start_polling.assert_awaited_once()
 

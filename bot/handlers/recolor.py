@@ -21,7 +21,7 @@ from bot.services.recolor import (
     render_unicode_emoji,
 )
 from bot.states import RecolorStates
-from bot.utils.temp_files import cleanup_paths, make_temp_path
+from bot.utils.temp_files import cleanup_paths, make_temp_path, run_temp_worker
 from bot.utils.premium_emoji import BRUSH, ERROR, LOADING
 from bot.utils.messages import (
     answer_callback,
@@ -199,11 +199,13 @@ async def _recolor_and_send(message: Message, state: FSMContext, hex_color: str)
         ):
             async with _RECOLOR_SEMAPHORE:
                 result_path = await asyncio.to_thread(
+                    run_temp_worker,
                     recolor_asset,
                     input_path,
                     output_path,
                     hex_color,
                     bool(data.get("recolor_adaptive")),
+                    input_paths=[input_path, output_path],
                 )
         if message.from_user and not message.from_user.is_bot:
             await delete_user_message(message)
@@ -307,7 +309,7 @@ async def _resolve_recolor_source(message: Message) -> RecolorSource | None:
             return animated_source
         local_path = make_temp_path(".png")
         try:
-            await asyncio.to_thread(render_unicode_emoji, text, local_path)
+            await asyncio.to_thread(run_temp_worker, render_unicode_emoji, text, local_path, input_paths=[local_path])
         except (OSError, ValueError):
             cleanup_paths(local_path)
             raise

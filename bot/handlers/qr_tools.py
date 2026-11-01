@@ -110,8 +110,8 @@ async def _send_qr(message: Message, payload: str, caption: str, lang: str) -> N
         return
 
     image_path: Path = make_temp_path(".png")
-    create_qr_image(payload, image_path)
     try:
+        create_qr_image(payload, image_path)
         await message.answer_photo(photo=FSInputFile(image_path), caption=caption, reply_markup=qr_tools_keyboard(lang))
     finally:
         cleanup_paths(image_path)

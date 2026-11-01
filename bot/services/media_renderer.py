@@ -20,7 +20,7 @@ from bot.services.render_models import (
     WatermarkPosition,
 )
 from bot.services.render_validation import row_layout
-from bot.utils.temp_files import make_temp_path
+from bot.utils.temp_files import make_temp_path, run_temp_worker
 
 
 LOGGER = logging.getLogger(__name__)
@@ -231,10 +231,14 @@ class MediaRenderer:
         async with _RENDER_SEMAPHORE:
             try:
                 return await asyncio.to_thread(
+                    run_temp_worker,
                     self._render_sync,
                     prepared,
                     font_bundle,
                     duration_limit,
+                    input_paths=[source.local_path for source in prepared.sources if source.local_path is not None]
+                    + ([prepared.background_source.local_path] if prepared.background_source is not None
+                       and prepared.background_source.local_path is not None else []),
                 )
             except RenderError:
                 raise
