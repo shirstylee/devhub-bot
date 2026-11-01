@@ -8,13 +8,13 @@ from time import monotonic
 
 @dataclass(frozen=True, slots=True)
 class AntiSpamPolicy:
-    burst: int = 6
-    refill_seconds: float = 2
-    block_seconds: float = 10
+    burst: int = 12
+    refill_seconds: float = 1
+    block_seconds: float = 3
     notice_seconds: float = 10
     global_burst: int = 30
     global_refill_seconds: float = 0.1
-    heavy_interval: float = 5
+    heavy_interval: float = 2
     max_heavy: int = 2
     max_users: int = 4096
     idle_ttl: float = 600

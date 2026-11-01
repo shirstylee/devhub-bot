@@ -55,33 +55,34 @@ class AntiSpamLimiterTests(unittest.TestCase):
         self.assertIsNone(self.limiter.begin(user_id))
         self.limiter.finish(user_id)
 
-    def test_default_burst_then_ten_second_pause(self) -> None:
-        for _ in range(6):
+    def test_default_burst_then_three_second_pause(self) -> None:
+        self.assertEqual(self.limiter.policy.burst, 12)
+        for _ in range(12):
             self.accept()
         denial = self.limiter.begin(7)
-        self.assertEqual((denial.reason, denial.retry_after, denial.notify), ("rate", 10, True))
-        self.clock.advance(9)
+        self.assertEqual((denial.reason, denial.retry_after, denial.notify), ("rate", 3, True))
+        self.clock.advance(2)
         denial = self.limiter.begin(7)
         self.assertEqual((denial.retry_after, denial.notify), (1, False))
         self.clock.advance(1)
         self.accept()
 
     def test_attempts_during_pause_do_not_extend_it(self) -> None:
-        for _ in range(6):
+        for _ in range(self.limiter.policy.burst):
             self.accept()
         self.limiter.begin(7)
         deadline = self.limiter._users[7].blocked_until
-        for _ in range(9):
-            self.clock.advance(1)
+        for _ in range(5):
+            self.clock.advance(0.5)
             self.assertIsNotNone(self.limiter.begin(7))
         self.assertEqual(self.limiter._users[7].blocked_until, deadline)
-        self.clock.advance(1)
+        self.clock.advance(0.5)
         self.accept()
 
-    def test_one_token_recovers_every_two_seconds(self) -> None:
-        for _ in range(6):
+    def test_one_token_recovers_every_second(self) -> None:
+        for _ in range(self.limiter.policy.burst):
             self.accept()
-        self.clock.advance(2)
+        self.clock.advance(1)
         self.accept()
         self.assertEqual(self.limiter.begin(7).reason, "rate")
 
@@ -152,15 +153,17 @@ class AntiSpamLimiterTests(unittest.TestCase):
         self.limiter.finish_heavy()
         self.assertIsNone(self.limiter.begin_heavy(9))
 
-    def test_heavy_processing_has_five_second_interval(self) -> None:
+    def test_heavy_processing_has_two_second_interval(self) -> None:
         self.assertIsNone(self.limiter.begin(7))
         self.assertIsNone(self.limiter.begin_heavy(7))
         self.limiter.finish_heavy()
         self.limiter.finish(7)
         self.assertIsNone(self.limiter.begin(7))
         denial = self.limiter.begin_heavy(7)
-        self.assertEqual((denial.reason, denial.retry_after), ("heavy", 5))
-        self.clock.advance(5)
+        self.assertEqual((denial.reason, denial.retry_after), ("heavy", 2))
+        self.clock.advance(1)
+        self.assertEqual(self.limiter.begin_heavy(7).retry_after, 1)
+        self.clock.advance(1)
         self.assertIsNone(self.limiter.begin_heavy(7))
 
     def test_upload_slots_do_not_start_or_enforce_processing_cooldown(self) -> None:
@@ -207,21 +210,21 @@ class AntiSpamMiddlewareTests(unittest.IsolatedAsyncioTestCase):
     async def test_messages_and_callbacks_share_one_user_budget(self) -> None:
         handler = AsyncMock()
         with patch.object(Message, "answer", AsyncMock()), patch.object(CallbackQuery, "answer", AsyncMock()) as answer:
-            for _ in range(3):
+            for _ in range(self.limiter.policy.burst // 2):
                 await self.dispatch(message(), handler)
                 await self.dispatch(callback(), handler)
             await self.dispatch(callback(), handler)
-        self.assertEqual(handler.await_count, 6)
+        self.assertEqual(handler.await_count, self.limiter.policy.burst)
         answer.assert_awaited_once()
         self.assertEqual(self.counters.rejected_requests, 1)
 
     async def test_same_user_in_different_chats_cannot_bypass_budget(self) -> None:
         handler = AsyncMock()
         with patch.object(Message, "answer", AsyncMock()):
-            for chat_id in range(7):
+            for chat_id in range(self.limiter.policy.burst + 1):
                 event = message().model_copy(update={"chat": Chat(id=chat_id, type="private")})
                 await self.dispatch(event, handler)
-        self.assertEqual(handler.await_count, 6)
+        self.assertEqual(handler.await_count, self.limiter.policy.burst)
 
     async def test_primary_and_additional_administrators_bypass_every_limit(self) -> None:
         directory = tempfile.TemporaryDirectory()
@@ -270,9 +273,9 @@ class AntiSpamMiddlewareTests(unittest.IsolatedAsyncioTestCase):
         await self.dispatch(message(43), handler)
         self.admin_ids.remove(43)
         with patch.object(Message, "answer", AsyncMock()):
-            for _ in range(7):
+            for _ in range(self.limiter.policy.burst + 1):
                 await self.dispatch(message(43), handler)
-        self.assertEqual(handler.await_count, 7)
+        self.assertEqual(handler.await_count, self.limiter.policy.burst + 1)
         self.assertEqual(self.counters.rejected_requests, 1)
 
     async def test_promotion_during_request_can_bypass_heavy_guard(self) -> None:
@@ -356,7 +359,7 @@ class AntiSpamMiddlewareTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_rejection_warning_uses_current_telegram_language(self) -> None:
         handler = AsyncMock()
-        for _ in range(6):
+        for _ in range(self.limiter.policy.burst):
             await self.dispatch(message(), handler)
         with patch.object(Message, "answer", AsyncMock()) as answer:
             await self.dispatch(message(language="en-GB"), handler)
@@ -367,9 +370,9 @@ class AntiSpamMiddlewareTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(Message, "answer", AsyncMock()) as answer:
             for _ in range(100):
                 await self.dispatch(message(), handler)
-        self.assertEqual(handler.await_count, 6)
+        self.assertEqual(handler.await_count, self.limiter.policy.burst)
         answer.assert_awaited_once()
-        self.assertEqual(self.counters.rejected_requests, 94)
+        self.assertEqual(self.counters.rejected_requests, 100 - self.limiter.policy.burst)
 
     async def test_telegram_warning_errors_do_not_retry_or_leak_slots(self) -> None:
         method = SendMessage(chat_id=7, text="warning")
@@ -411,11 +414,11 @@ class AntiSpamIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.router.message.register(capture)
         self.router.callback_query.register(capture)
         with patch.object(CallbackQuery, "answer", AsyncMock()) as answer:
-            for update_id in range(3):
+            for update_id in range(self.limiter.policy.burst // 2):
                 await self.dp.feed_update(self.bot, Update(update_id=update_id, message=message()))
                 await self.dp.feed_update(self.bot, Update(update_id=update_id + 10, callback_query=callback()))
             await self.dp.feed_update(self.bot, Update(update_id=30, callback_query=callback()))
-        self.assertEqual(len(captured), 6)
+        self.assertEqual(len(captured), self.limiter.policy.burst)
         answer.assert_awaited_once()
 
     async def test_heavy_flags_resolve_in_child_router_and_light_menu_is_not_delayed(self) -> None:
@@ -437,7 +440,7 @@ class AntiSpamIntegrationTests(unittest.IsolatedAsyncioTestCase):
         with patch("bot.middlewares.admin_access.administrator_store.is_admin", return_value=False), \
              patch.object(Message, "answer", AsyncMock()) as answer, \
              patch.object(CallbackQuery, "answer", AsyncMock()) as callback_answer:
-            for update_id in range(7):
+            for update_id in range(self.limiter.policy.burst + 1):
                 await self.dp.feed_update(self.bot, Update(update_id=update_id, message=message()))
             answer.reset_mock()
             for update_id in range(10, 30):
