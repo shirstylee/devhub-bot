@@ -1399,10 +1399,11 @@ def _history_text(entries: list[RenderHistoryEntry]) -> str:
             f"{entry.settings.width}×{entry.settings.height} · "
             f"{format_labels[entry.settings.output_format]} · {entry.duration:.1f} сек."
         )
+    history_lines = "\n".join(lines)
     return (
         f"{HISTORY.html} <b>История рендеров</b>\n\n"
         "<blockquote>Нажмите на запись, чтобы повторить её с прежними настройками.\n\n"
-        f"{'\n'.join(lines)}</blockquote>"
+        f"{history_lines}</blockquote>"
     )
 
 

@@ -9,6 +9,7 @@ from bot.handlers.emoji_renderer import (
     _edit_panel,
     _ensure_background_in_state,
     _home_text,
+    _history_text,
     _settings_with_section_default,
     _source_from_message,
     pack_toggle,
@@ -27,6 +28,16 @@ from bot.utils.premium_emoji import APPS, SETTINGS
 
 
 class PanelBehaviorTests(unittest.IsolatedAsyncioTestCase):
+    def test_history_entries_keep_separate_lines(self) -> None:
+        entries = [
+            RenderHistoryEntry(str(index), "invalid date", RenderSettings(), [], None, 1.5)
+            for index in (1, 2)
+        ]
+        text = _history_text(entries)
+        self.assertIn("1. без даты · Медиа ·", text)
+        self.assertIn("\n2. без даты · Медиа ·", text)
+        self.assertTrue(text.endswith("</blockquote>"))
+
     def test_section_default_does_not_reset_unrelated_settings(self) -> None:
         settings = RenderSettings(
             background_color="#123456",
